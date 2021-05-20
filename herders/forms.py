@@ -1935,7 +1935,7 @@ class FilterDungeonLogForm(FilterLogTimeRangeMixin):
     )
     level__floor = forms.ChoiceField(
         label='Floor',
-        choices=[(None, '---')] + [(floor, f'B{floor}') for floor in range(1, 11)],
+        choices=[(None, '---')] + [(floor, f'B{floor}') for floor in range(1, 13)],
         required=False,
     )
     level__difficulty__in = forms.MultipleChoiceField(
@@ -1976,6 +1976,102 @@ class FilterDungeonLogForm(FilterLogTimeRangeMixin):
             ),
             Submit('submit', 'Apply')
         )
+
+class FilterRuneDropDetailLogForm(FilterLogTimeRangeMixin):
+    runes__type__in = forms.MultipleChoiceField(
+        choices= RuneInstance.TYPE_CHOICES,
+        label='Type',
+        required=False
+    )
+    runes__slot__in = forms.MultipleChoiceField(
+        choices=((1, 1), (2, 2), (3, 3), (4, 4), (5, 5), (6, 6)),
+        label='Slot',
+        required=False
+    )
+    runes__stars__in = forms.MultipleChoiceField(
+        choices=((1, 1), (2, 2), (3, 3), (4, 4), (5, 5), (6, 6)),
+        label='Stars',
+        required=False
+    )
+    runes__quality__in = forms.MultipleChoiceField(
+        choices=RuneInstance.QUALITY_CHOICES,
+        label='Quality',
+        required=False
+    )    
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.helper = FormHelper(self)
+        self.helper.include_media = False
+        self.helper.layout = Layout(
+            Div(
+                Div(
+                    Fieldset(
+                        'Rune Filters',
+                        Field('runes__type__in', css_class='select2 auto-submit', wrapper_class='form-group-sm form-group-condensed'),
+                        Field('runes__quality__in', css_class='select2 auto-submit', wrapper_class='form-group-sm form-group-condensed'),
+                        Field('runes__slot__in', css_class='select2', wrapper_class='form-group-sm form-group-condensed'),
+                        Field('runes__stars__in', css_class='select2', wrapper_class='form-group-sm form-group-condensed'),                         
+                    ),
+                    css_class='col-md-6 col-xs-12'
+                ),
+                Div(
+                    FilterLogTimeRangeLayout(),
+                    css_class='col-md-6 col-xs-12'
+                ),
+                css_class='row',
+            ),
+            Submit('submit', 'Apply')
+        )
+
+class FilterArtifactDropDetailLogForm(FilterLogTimeRangeMixin):
+    artifacts__slot__in = forms.MultipleChoiceField(
+        choices= ArtifactInstance.SLOT_CHOICES,
+        label='Type',
+        required=False
+    )
+    artifacts__element__in = forms.MultipleChoiceField(
+        choices=ArtifactInstance.ELEMENT_CHOICES,
+        label='Element',
+        required=False
+    )
+    artifacts__archetype__in = forms.MultipleChoiceField(
+        choices=ArtifactInstance.ARCHETYPE_CHOICES,
+        label='Archetype',
+        required=False
+    )
+    artifacts__quality__in = forms.MultipleChoiceField(
+        choices=ArtifactInstance.QUALITY_CHOICES,
+        label='Quality',
+        required=False
+    )    
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.helper = FormHelper(self)
+        self.helper.include_media = False
+        self.helper.layout = Layout(
+            Div(
+                Div(
+                    Fieldset(
+                        'Rune Filters',
+                        Field('artifacts__slot__in', css_class='select2 auto-submit', wrapper_class='form-group-sm form-group-condensed'),
+                        Field('artifacts__element__in', css_class='select2 auto-submit', wrapper_class='form-group-sm form-group-condensed'),
+                        Field('artifacts__archetype__in', css_class='select2', wrapper_class='form-group-sm form-group-condensed'),
+                        Field('artifacts__quality__in', css_class='select2', wrapper_class='form-group-sm form-group-condensed'),                         
+                    ),
+                    css_class='col-md-6 col-xs-12'
+                ),
+                Div(
+                    FilterLogTimeRangeLayout(),
+                    css_class='col-md-6 col-xs-12'
+                ),
+                css_class='row',
+            ),
+            Submit('submit', 'Apply')
+        )        
 
 
 class FilterRiftDungeonForm(FilterLogTimeRangeMixin):

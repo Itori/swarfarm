@@ -151,9 +151,9 @@ urlpatterns = [
             url(r'^dungeons/', include([
                 path('', views.data_log.DungeonDashboard.as_view(), name='data_log_dungeon_dashboard'),
                 path('table/', views.data_log.DungeonTable.as_view(), name='data_log_dungeon_table'),
-                path('<slug:slug>/', views.data_log.DungeonDetail.as_view(), name='data_log_dungeon_detail_no_floor'),
-                path('<slug:slug>/b<int:floor>/', views.data_log.DungeonDetail.as_view(), name='data_log_dungeon_detail'),
-                path('<slug:slug>/<str:difficulty>/b<int:floor>/', views.data_log.DungeonDetail.as_view(), name='data_log_dungeon_detail_difficulty'),
+                path('<slug:slug>/', views.data_log.DungeonDetails.as_view(), name='data_log_dungeon_detail_no_floor'),
+                path('<slug:slug>/b<int:floor>/', views.data_log.DungeonDetails.as_view(), name='data_log_dungeon_detail'),
+                path('<slug:slug>/<str:difficulty>/b<int:floor>/', views.data_log.DungeonDetails.as_view(), name='data_log_dungeon_detail_difficulty'),
             ])),
             url(r'^rift_beast/', include([
                 path('', views.data_log.ElementalRiftDungeonDashboard.as_view(), name='data_log_rift_dungeon_dashboard'),

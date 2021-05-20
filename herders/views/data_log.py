@@ -14,7 +14,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from bestiary.models import Dungeon, Level, GameItem, RuneCraft
 from data_log.reports.generate import get_drop_querysets, drop_report, get_monster_report, get_rune_report
 from data_log.util import transform_to_dict, replace_value_with_choice, floor_to_nearest, ceil_to_nearest
-from herders.forms import FilterLogTimestamp, FilterDungeonLogForm, FilterRiftDungeonForm, FilterSummonLogForm, \
+from herders.forms import FilterLogTimestamp, FilterDungeonLogForm, FilterRuneDropDetailLogForm, FilterArtifactDropDetailLogForm, FilterRiftDungeonForm, FilterSummonLogForm, \
     FilterWorldBossLogForm, FilterRiftDungeonFormGradeOnly, FilterRiftRaidLogForm, FilterRuneCraftLogForm, FilterMagicBoxCraftLogForm
 from herders.models import Monster, RuneInstance, Summoner
 from herders.decorators import username_case_redirect
@@ -129,6 +129,16 @@ class DashboardMixin:
 
 class DetailMixin:
     form_class = FilterLogTimestamp  # Only need timestamp filters when viewing detail. Other params are source from URL
+
+class SummonDetailMixin:
+    form_class = FilterLogTimestamp  # Only need timestamp filters when viewing detail. Other params are source from URL    
+
+class RunesDetailMixin:
+    form_class = FilterRuneDropDetailLogForm
+
+class ArtifactsDetailMixin:
+    form_class = FilterArtifactDropDetailLogForm
+    
 
 
 class SuccessMixin:
@@ -285,23 +295,22 @@ class DungeonDashboard(DashboardMixin, DungeonMixin, DataLogView):
         return super().get_context_data(**kwargs)
 
 
-class DungeonDetail(DetailMixin, DungeonMixin, DataLogView):
-    template_name = 'herders/profile/data_logs/dungeons/detail.html'
+class DungeonDetails(RunesDetailMixin, ArtifactsDetailMixin, DungeonMixin, DataLogView):
     dungeon = None
-    level = None
 
-    def get_queryset(self):
-        return super().get_queryset().filter(level=self.get_level())
-
-    def get_context_data(self, **kwargs):
-        context = {
-            'dungeon': self.get_dungeon(),
-            'level': self.get_level(),
-            'report': drop_report(self.get_queryset(), min_count=0),
-        }
-
-        context.update(kwargs)
-        return super().get_context_data(**context)
+    def get(self, request, *args, **kwargs):
+        dungeon = self.get_dungeon()    
+        # we can't have runes on other cairos than GB, DB, NB    
+        if(dungeon.category == Dungeon.CATEGORY_CAIROS):
+            if(dungeon.com2us_id in (6001, 8001, 9001)):
+                view = DungeonWithRunesDetail.as_view(dungeon=dungeon)
+            elif dungeon.com2us_id in (9501,9502):
+                view = DungeonWithArtifactsDetail.as_view(dungeon=dungeon)
+            else:
+                view = DungeonDetail.as_view(dungeon=dungeon)
+        else:
+            view = DungeonDetail.as_view(dungeon=dungeon)
+        return view(request, *args, **kwargs)
 
     def get_dungeon(self):
         if not self.dungeon:
@@ -314,7 +323,25 @@ class DungeonDetail(DetailMixin, DungeonMixin, DataLogView):
                     raise Http404('Dungeon not found')
             else:
                 raise Http404('No slug provided to locate dungeon')
-        return self.dungeon
+        return self.dungeon        
+
+class DungeonDetailBase(DataLogView):
+    template_name = 'herders/profile/data_logs/dungeons/detail.html'
+    dungeon = None
+    level = None
+
+    def get_queryset(self):
+        return super().get_queryset().filter(level=self.get_level())
+
+    def get_context_data(self, **kwargs):
+        context = {
+            'dungeon': self.dungeon,
+            'level': self.get_level(),
+            'report': drop_report(self.get_queryset(), min_count=0),
+        }
+
+        context.update(kwargs)
+        return super().get_context_data(**context)
 
     def get_level(self):
         if self.level:
@@ -324,7 +351,7 @@ class DungeonDetail(DetailMixin, DungeonMixin, DataLogView):
         difficulty = self.kwargs.get('difficulty')
 
         level = None
-        levels = self.get_dungeon().level_set.all()
+        levels = self.dungeon.level_set.all()
 
         if difficulty:
             difficulty_id = {v.lower(): k for k, v in dict(Level.DIFFICULTY_CHOICES).items()}.get(difficulty)
@@ -338,7 +365,7 @@ class DungeonDetail(DetailMixin, DungeonMixin, DataLogView):
             levels = levels.filter(floor=floor)
         else:
             # Pick first hell level for scenarios, otherwise always last level
-            if self.get_dungeon().category == Dungeon.CATEGORY_SCENARIO:
+            if self.dungeon.category == Dungeon.CATEGORY_SCENARIO:
                 level = levels.filter(difficulty=Level.DIFFICULTY_HELL).first()
             else:
                 level = levels.last()
@@ -352,6 +379,15 @@ class DungeonDetail(DetailMixin, DungeonMixin, DataLogView):
 
         self.level = level
         return level
+
+class DungeonWithRunesDetail(RunesDetailMixin, DungeonMixin, DungeonDetailBase):
+    pass
+
+class DungeonWithArtifactsDetail(ArtifactsDetailMixin, DungeonMixin, DungeonDetailBase):
+    pass
+
+class DungeonDetail(DetailMixin, DungeonMixin, DungeonDetailBase):
+    pass
 
 
 class DungeonTable(DungeonMixin, TableView):
@@ -718,7 +754,7 @@ class SummonsDashboard(DashboardMixin, SummonsMixin, DataLogView):
         return super().get_context_data(**context)
 
 
-class SummonsDetail(DetailMixin, SummonsMixin, DataLogView):
+class SummonsDetail(SummonDetailMixin, SummonsMixin, DataLogView):
     template_name = 'herders/profile/data_logs/summons/detail.html'
     item = None
 
